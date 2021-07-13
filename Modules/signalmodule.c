@@ -81,6 +81,10 @@ static long main_thread;
 static pid_t main_pid;
 #endif
 
+/* Add by Chen.Yu */
+// 增加 ceval.c 中设置的全局变量
+extern volatile int breakCurLoop;
+
 static struct {
     int tripped;
     PyObject *func;
@@ -94,6 +98,8 @@ static volatile sig_atomic_t is_tripped = 0;
 static PyObject *DefaultHandler;
 static PyObject *IgnoreHandler;
 static PyObject *IntHandler;
+/* Add by Chen.Yu */
+static PyObject *signal_deadLoop;
 
 #ifdef HAVE_GETITIMER
 static PyObject *ItimerError;
@@ -156,6 +162,22 @@ PyDoc_STRVAR(default_int_handler_doc,
 The default handler for SIGINT installed by Python.\n\
 It raises KeyboardInterrupt.");
 
+
+/* Add by Chen.Yu */
+// 对信号 SIGUSR1 的信号处理函数
+static PyObject *
+signal_deadLoop_Func(PyObject* self, PyObject* args)
+{   
+    breakCurLoop++;
+    
+    return NULL;
+}
+
+PyDoc_STRVAR(deadLoop_doc,
+"deadLoop_doc(...)\n\
+\n\
+The default handler for SIGUSR1 installed by Python.\n\
+It raises breakDeadLoop.");
 
 static int
 checksignals_witharg(void * unused)
@@ -530,6 +552,9 @@ static PyMethodDef signal_methods[] = {
 #endif
     {"default_int_handler", signal_default_int_handler,
      METH_VARARGS, default_int_handler_doc},
+    /* Add by Chen.Yu */
+    {"deadLoop", signal_deadLoop_Func, METH_VARARGS, deadLoop_doc},
+
     {NULL,                      NULL}           /* sentinel */
 };
 
@@ -607,6 +632,12 @@ initsignal(void)
         goto finally;
     Py_INCREF(IntHandler);
 
+    /* Add by Chen.Yu */
+    x = signal_deadLoop = PyDict_GetItemString(d, "deadLoop");
+    if (!x)
+        goto finally;
+    Py_INCREF(signal_deadLoop);
+
     Handlers[0].tripped = 0;
     for (i = 1; i < NSIG; i++) {
         void (*t)(int);
@@ -626,6 +657,12 @@ initsignal(void)
         Py_SETREF(Handlers[SIGINT].func, IntHandler);
         PyOS_setsig(SIGINT, signal_handler);
     }
+
+    /* Add by Chen.Yu */
+    // signal_deadLoop = signal_deadLoop_Func;
+    Py_INCREF(signal_deadLoop);
+    Py_SETREF(Handlers[SIGUSR1].func, signal_deadLoop);
+    PyOS_setsig(SIGUSR1, signal_handler);
 
 #ifdef SIGHUP
     x = PyInt_FromLong(SIGHUP);
@@ -882,6 +919,10 @@ finisignal(void)
     Py_XDECREF(DefaultHandler);
     DefaultHandler = NULL;
     Py_XDECREF(IgnoreHandler);
+    IgnoreHandler = NULL;
+
+    /* Add by Chen.Yu */
+    Py_XDECREF(signal_deadLoop);
     IgnoreHandler = NULL;
 }
 

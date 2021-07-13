@@ -19,6 +19,9 @@
 
 #include <ctype.h>
 
+/* Add by Chen.Yu */
+volatile int breakCurLoop;
+
 #ifndef WITH_TSC
 
 #define READ_TIMESTAMP(var)
@@ -226,6 +229,29 @@ PyEval_GetCallStats(PyObject *self)
     return Py_None;
 }
 #endif
+
+/* Add by Chen.Yu */
+// 由暴露出来的接口修改
+// 但是这个是单一进程的
+// 如果进程A在执行程序（包含死循环），然后进程 B 运行这个接口。但是这个是不同进程中的，显然不是同一个 breakCurLoop
+// volatile int breakCurLoop;
+
+// 需要在几个地方进行设置
+// 在什么地方进行 check ?
+int
+checksig() 
+{
+    // breakCurLoop 被暴露出来的接口设置了
+    // 跳出当前循环
+    if (breakCurLoop != 0) {
+        // 跳出当前的循环
+        // 如何跳出循环 ?
+        
+        return 1;
+    }
+
+    return 0;
+}
 
 
 #ifdef WITH_THREAD
@@ -2805,7 +2831,13 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             */
             goto fast_next_opcode;
 #else
-            DISPATCH();
+            
+            /* Add by Chen.Yu */
+            if (checksig() != 0) {
+                why = WHY_BREAK;
+                goto fast_block_end;
+            }
+
 #endif
         }
 
