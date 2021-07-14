@@ -20,7 +20,7 @@
 #include <ctype.h>
 
 /* Add by Chen.Yu */
-volatile int breakCurLoop;
+volatile int breakCurLoop = 0;
 
 #ifndef WITH_TSC
 
@@ -243,7 +243,7 @@ checksig()
 {
     // breakCurLoop 被暴露出来的接口设置了
     // 跳出当前循环
-    if (breakCurLoop != 0) {
+    if (breakCurLoop == 1) {
         // 跳出当前的循环
         // 如何跳出循环 ?
         
@@ -1133,6 +1133,8 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             ticked = 1;
 #endif
             if (pendingcalls_to_do) {
+                /* Add by Chen.Yu */
+                // printf("执行了回调函数\n");  // For test.
                 if (Py_MakePendingCalls() < 0) {
                     why = WHY_EXCEPTION;
                     goto on_error;
@@ -1144,6 +1146,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
                        a thread switch */
                     _Py_Ticker = 0;
             }
+
+            /* Add by Chen.Yu */
+            if (checksig() != 0) {
+                why = WHY_BREAK;
+                goto fast_block_end;
+                // DISPATCH();
+                // {
+                //     PyTryBlock *b = PyFrame_BlockPop(f);
+                //     while (STACK_LEVEL() > b->b_level) {
+                //         v = POP();
+                //         Py_DECREF(v);
+                //     }
+                // }
+                // DISPATCH();
+            }
+
 #ifdef WITH_THREAD
             if (interpreter_lock) {
                 /* Give another thread a chance */
@@ -1172,6 +1190,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             }
 #endif
         }
+
+        /* Add by Chen.Yu */
+        // printf("执行完回调函数，还是会到这边\n");  // For test.
 
     fast_next_opcode:
         f->f_lasti = INSTR_OFFSET();
@@ -2819,7 +2840,23 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 
         PREDICTED_WITH_ARG(JUMP_ABSOLUTE);
         TARGET(JUMP_ABSOLUTE)
-        {
+        {   
+            printf("xxxxxxxxxxxxxxx");
+            /* Add by Chen.Yu */
+            if (checksig() != 0) {
+                why = WHY_BREAK;
+                goto fast_block_end;
+                // DISPATCH();
+                // {
+                //     PyTryBlock *b = PyFrame_BlockPop(f);
+                //     while (STACK_LEVEL() > b->b_level) {
+                //         v = POP();
+                //         Py_DECREF(v);
+                //     }
+                // }
+                // DISPATCH();
+            }
+
             JUMPTO(oparg);
 #if FAST_LOOPS
             /* Enabling this path speeds-up all while and for-loops by bypassing
@@ -2832,13 +2869,6 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             goto fast_next_opcode;
 #else
             DISPATCH();
-
-            /* Add by Chen.Yu */
-            // if (checksig() != 0) {
-            //     why = WHY_BREAK;
-            //     goto fast_block_end;
-            // }
-
 #endif
         }
 
@@ -3283,6 +3313,8 @@ fast_block_end:
                 Py_XDECREF(v);
             }
             if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
+                /* Add by Chen.Yu */
+                printf("1234567890");  // For test.
                 why = WHY_NOT;
                 JUMPTO(b->b_handler);
                 break;

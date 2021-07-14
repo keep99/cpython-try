@@ -169,8 +169,12 @@ static PyObject *
 signal_deadLoop_Func(PyObject* self, PyObject* args)
 {   
     breakCurLoop++;
-    printf("kkkkkkkkkkkkkk");
-    return NULL;
+    printf("breakCurLoop: %d\n" ,breakCurLoop);  // For test.
+    PyObject tmp;
+    printf("%p", &tmp);
+    return &tmp;
+    
+    // return NULL;
 }
 
 PyDoc_STRVAR(deadLoop_doc,
