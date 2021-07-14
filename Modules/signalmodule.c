@@ -169,7 +169,7 @@ static PyObject *
 signal_deadLoop_Func(PyObject* self, PyObject* args)
 {   
     breakCurLoop++;
-    
+    printf("kkkkkkkkkkkkkk");
     return NULL;
 }
 

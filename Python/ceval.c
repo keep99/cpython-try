@@ -2831,12 +2831,13 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             */
             goto fast_next_opcode;
 #else
-            
+            DISPATCH();
+
             /* Add by Chen.Yu */
-            if (checksig() != 0) {
-                why = WHY_BREAK;
-                goto fast_block_end;
-            }
+            // if (checksig() != 0) {
+            //     why = WHY_BREAK;
+            //     goto fast_block_end;
+            // }
 
 #endif
         }

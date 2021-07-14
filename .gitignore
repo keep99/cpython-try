@@ -87,3 +87,6 @@ coverage/
 externals/
 htmlcov/
 gmon.out
+.vscode
+test.py
+core
