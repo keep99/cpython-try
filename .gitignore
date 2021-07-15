@@ -90,3 +90,5 @@ gmon.out
 .vscode
 test.py
 core
+test_pro.py
+test_dis.py

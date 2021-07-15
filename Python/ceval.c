@@ -18,9 +18,11 @@
 #include "structmember.h"
 
 #include <ctype.h>
+/* Add by Chen.Yu */
+#include <stdbool.h>
 
 /* Add by Chen.Yu */
-volatile int breakCurLoop = 0;
+volatile bool breakCurLoop = 0;
 
 #ifndef WITH_TSC
 
@@ -1138,7 +1140,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 #endif
             if (pendingcalls_to_do) {
                 /* Add by Chen.Yu */
-                printf("执行了回调函数\n");  // For test.
+                // printf("执行了回调函数\n");  // For test.
                 if (Py_MakePendingCalls() < 0) {
                     
                     if(checksig() == 0) {
@@ -2848,7 +2850,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         PREDICTED_WITH_ARG(JUMP_ABSOLUTE);
         TARGET(JUMP_ABSOLUTE)
         {   
-            printf("xxxxxxxxxxxxxxx");
+            // printf("xxxxxxxxxxxxxxx");  // For test. 
             /* Add by Chen.Yu */
             if (checksig() != 0) {
                 why = WHY_BREAK;
@@ -3322,7 +3324,7 @@ fast_block_end:
             if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
                 /* Add by Chen.Yu */
                 breakCurLoop = 0;  // breakCurLoop 转为 0
-                printf("1234567890");  // For test.
+                // printf("1234567890");  // For test.
                 why = WHY_NOT;
                 JUMPTO(b->b_handler);
                 break;

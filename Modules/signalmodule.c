@@ -6,6 +6,9 @@
 #include "Python.h"
 #include "intrcheck.h"
 
+/* Add by Chen.Yu */
+#include <stdbool.h>
+
 #ifdef MS_WINDOWS
 #include <Windows.h>
 #ifdef HAVE_PROCESS_H
@@ -83,7 +86,7 @@ static pid_t main_pid;
 
 /* Add by Chen.Yu */
 // 增加 ceval.c 中设置的全局变量
-extern volatile int breakCurLoop;
+extern volatile bool breakCurLoop;
 
 static struct {
     int tripped;
@@ -168,13 +171,20 @@ It raises KeyboardInterrupt.");
 static PyObject *
 signal_deadLoop_Func(PyObject* self, PyObject* args)
 {   
-    breakCurLoop++;
-    printf("breakCurLoop: %d\n" ,breakCurLoop);  // For test.
-    PyObject tmp;
-    printf("%p", &tmp);
-    return &tmp;
+    breakCurLoop = 1;
+    // printf("breakCurLoop: %d\n" ,breakCurLoop);  // For test.
+
+    //=============================================
+    // 这一段代码耗内存!!!
+    // PyObject tmp;  // Avoid return NULL.
+    // // printf("%p", &tmp);
+    // return &tmp;
+    //=============================================
     
-    // return NULL;
+    // return self，只是为了避免 return NULL.
+    // return self;
+
+    return NULL;
 }
 
 PyDoc_STRVAR(deadLoop_doc,
