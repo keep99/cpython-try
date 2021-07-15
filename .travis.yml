@@ -72,8 +72,6 @@ before_install:
           fi
         fi
       fi
-
-
 # Travis provides only 2 cores, so don't overdo the parallelism and waste memory.
 before_script:
   - ./configure --with-pydebug

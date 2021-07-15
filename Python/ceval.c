@@ -602,11 +602,15 @@ Py_MakePendingCalls(void)
         arg = pendingcalls[i].arg;
         pendingfirst = (i + 1) % NPENDINGCALLS;
         if (func(arg) < 0) {
+            /* Add by Chen.Yu */
+            // printf("回调函数返回小于 0");
             busy = 0;
             pendingcalls_to_do = 1; /* We're not done yet */
             return -1;
         }
     }
+    /* Add by Chen.Yu */
+    // printf("回调函数返回不小于 0");
     busy = 0;
     return 0;
 }
@@ -1134,10 +1138,13 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 #endif
             if (pendingcalls_to_do) {
                 /* Add by Chen.Yu */
-                // printf("执行了回调函数\n");  // For test.
+                printf("执行了回调函数\n");  // For test.
                 if (Py_MakePendingCalls() < 0) {
-                    why = WHY_EXCEPTION;
-                    goto on_error;
+                    
+                    if(checksig() == 0) {
+                        why = WHY_EXCEPTION;
+                        goto on_error;
+                    }
                 }
                 if (pendingcalls_to_do)
                     /* MakePendingCalls() didn't succeed.
@@ -1148,19 +1155,19 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             }
 
             /* Add by Chen.Yu */
-            if (checksig() != 0) {
-                why = WHY_BREAK;
-                goto fast_block_end;
-                // DISPATCH();
-                // {
-                //     PyTryBlock *b = PyFrame_BlockPop(f);
-                //     while (STACK_LEVEL() > b->b_level) {
-                //         v = POP();
-                //         Py_DECREF(v);
-                //     }
-                // }
-                // DISPATCH();
-            }
+            // if (checksig() != 0) {
+            //     why = WHY_BREAK;
+            //     goto fast_block_end;
+            //     // DISPATCH();
+            //     // {
+            //     //     PyTryBlock *b = PyFrame_BlockPop(f);
+            //     //     while (STACK_LEVEL() > b->b_level) {
+            //     //         v = POP();
+            //     //         Py_DECREF(v);
+            //     //     }
+            //     // }
+            //     // DISPATCH();
+            // }
 
 #ifdef WITH_THREAD
             if (interpreter_lock) {
@@ -3314,6 +3321,7 @@ fast_block_end:
             }
             if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
                 /* Add by Chen.Yu */
+                breakCurLoop = 0;  // breakCurLoop 转为 0
                 printf("1234567890");  // For test.
                 why = WHY_NOT;
                 JUMPTO(b->b_handler);
