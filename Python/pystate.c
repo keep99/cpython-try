@@ -46,6 +46,8 @@ static int autoTLSkey = 0;
 
 static PyInterpreterState *interp_head = NULL;
 
+/* Add by Chen.Yu */
+// 当前活动的线程对应的 PyThreadState 对象
 PyThreadState *_PyThreadState_Current = NULL;
 PyThreadFrameGetter _PyThreadState_GetFrame = NULL;
 
@@ -156,13 +158,15 @@ threadstate_getframe(PyThreadState *self)
 static PyThreadState *
 new_threadstate(PyInterpreterState *interp, int init)
 {
+    /* Add by Chen.Yu */
+    // 为线程状态对象申请内存 
     PyThreadState *tstate = (PyThreadState *)malloc(sizeof(PyThreadState));
 
     if (_PyThreadState_GetFrame == NULL)
         _PyThreadState_GetFrame = threadstate_getframe;
 
     if (tstate != NULL) {
-        tstate->interp = interp;
+        tstate->interp = interp;  // 设置该线程所在进程
 
         tstate->frame = NULL;
         tstate->recursion_depth = 0;
@@ -338,6 +342,8 @@ PyThreadState_Swap(PyThreadState *newts)
 {
     PyThreadState *oldts = _PyThreadState_Current;
 
+    /* Add by Chen.Yu */
+    // 将 newts 设置为当前活动线程，可以理解为发生了线程切换
     _PyThreadState_Current = newts;
     /* It should not be possible for more than one thread state
        to be used for a thread.  Check this the best we can in debug

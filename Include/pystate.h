@@ -13,6 +13,7 @@ extern "C" {
 struct _ts; /* Forward */
 struct _is; /* Forward */
 
+/* 进程状态对象 */
 typedef struct _is {
 
     struct _is *next;
@@ -53,6 +54,8 @@ typedef int (*Py_tracefunc)(PyObject *, struct _frame *, int, PyObject *);
 #define PyTrace_C_EXCEPTION 5
 #define PyTrace_C_RETURN 6
 
+/* Add by Chen.Yu */
+/* 线程状态对象 */
 typedef struct _ts {
     /* See Python/ceval.c for comments explaining most fields */
 
@@ -117,7 +120,7 @@ PyAPI_FUNC(void) PyThreadState_DeleteCurrent(void);
 #endif
 
 PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
-PyAPI_FUNC(PyThreadState *) PyThreadState_Swap(PyThreadState *);
+PyAPI_FUNC(PyThreadState *) PyThreadState_Swap(PyThreadState *);  // 设置当前活动的线程
 PyAPI_FUNC(PyObject *) PyThreadState_GetDict(void);
 PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
 

@@ -1906,6 +1906,7 @@ PyOS_getsig(int sig)
 #endif
 }
 
+// 为信号i设置信号处理函数h，并返回旧的信号处理函数
 PyOS_sighandler_t
 PyOS_setsig(int sig, PyOS_sighandler_t handler)
 {

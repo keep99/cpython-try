@@ -489,6 +489,8 @@ Py_MakePendingCalls(void)
             return -1;
     }
 
+    /* Add by Chen.Yu */
+    // 只在主线程中执行回调函数
     /* only service pending calls on main thread */
     if (main_thread && PyThread_get_thread_ident() != main_thread)
         return 0;
@@ -1142,7 +1144,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
                 /* Add by Chen.Yu */
                 // printf("执行了回调函数\n");  // For test.
                 if (Py_MakePendingCalls() < 0) {
-                    
+                    // 当checksig 为 1 时，继续往下执行
                     if(checksig() == 0) {
                         why = WHY_EXCEPTION;
                         goto on_error;
@@ -1172,6 +1174,8 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             // }
 
 #ifdef WITH_THREAD
+            /* Add by Chen.Yu */
+            // 线程调度
             if (interpreter_lock) {
                 /* Give another thread a chance */
 
