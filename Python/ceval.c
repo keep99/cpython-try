@@ -492,6 +492,8 @@ Py_MakePendingCalls(void)
 
     /* Add by Chen.Yu */
     // 只在主线程中执行回调函数
+    // main_thread 为 0 或者 当前线程的标识 不等于 main_thread，执行回调
+    // 对应的是单进程单线程程序 和 多线程且当前线程为主线程
     /* only service pending calls on main thread */
     if (main_thread && PyThread_get_thread_ident() != main_thread)
         return 0;
@@ -2858,8 +2860,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             // printf("xxxxxxxxxxxxxxx");  // For test. 
             /* Add by Chen.Yu */
             // 三个判断的顺序需要满足以下顺序
+            if (checksig() != 0 && (!main_thread || PyThread_get_thread_ident() == main_thread)) {
+            // error : if(checksig() != 0 && main_thread && PyThread_get_thread_ident() == main_thread)
             // if (checksig() != 0) {
-            if (checksig() != 0 && main_thread && PyThread_get_thread_ident() == main_thread) {
                 why = WHY_BREAK;
                 goto fast_block_end;
                 // DISPATCH();
@@ -3328,9 +3331,11 @@ fast_block_end:
                 v = POP();
                 Py_XDECREF(v);
             }
+            /* Add by Chen.Yu */
+            // Fixed: 如果是其他线程中的 break op_code 走到了，逻辑有误？
             if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
                 /* Add by Chen.Yu */
-                if (main_thread && PyThread_get_thread_ident() == main_thread)
+                if (!main_thread || PyThread_get_thread_ident() == main_thread)
                     breakCurLoop = 0;  // breakCurLoop 转为 0
                 // printf("1234567890");  // For test.
                 why = WHY_NOT;
