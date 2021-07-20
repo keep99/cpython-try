@@ -22,6 +22,7 @@
 #include <stdbool.h>
 
 /* Add by Chen.Yu */
+// 不能加 static，否则其他文件看不到
 volatile bool breakCurLoop = 0;
 
 #ifndef WITH_TSC
@@ -2856,7 +2857,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         {   
             // printf("xxxxxxxxxxxxxxx");  // For test. 
             /* Add by Chen.Yu */
-            if (checksig() != 0) {
+            // 三个判断的顺序需要满足以下顺序
+            // if (checksig() != 0) {
+            if (checksig() != 0 && main_thread && PyThread_get_thread_ident() == main_thread) {
                 why = WHY_BREAK;
                 goto fast_block_end;
                 // DISPATCH();
@@ -3327,7 +3330,8 @@ fast_block_end:
             }
             if (b->b_type == SETUP_LOOP && why == WHY_BREAK) {
                 /* Add by Chen.Yu */
-                breakCurLoop = 0;  // breakCurLoop 转为 0
+                if (main_thread && PyThread_get_thread_ident() == main_thread)
+                    breakCurLoop = 0;  // breakCurLoop 转为 0
                 // printf("1234567890");  // For test.
                 why = WHY_NOT;
                 JUMPTO(b->b_handler);
