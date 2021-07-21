@@ -641,6 +641,9 @@ initsignal(void)
         goto finally;
     Py_DECREF(x);
 
+    /* Add by Chen.Yu */
+    // 获取signal模块中的默认中断处理函数，
+    // 实际就是 signal_default_int_handler
     x = IntHandler = PyDict_GetItemString(d, "default_int_handler");
     if (!x)
         goto finally;

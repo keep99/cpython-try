@@ -195,16 +195,12 @@ static int pcall[PCALL_NUM];
 #define PCALL_POP 10
 
 /* Notes about the statistics
-
    PCALL_FAST stats
-
    FAST_FUNCTION means no argument tuple needs to be created.
    FASTER_FUNCTION means that the fast-path frame setup code is used.
-
    If there is a method call where the call can be optimized by changing
    the argument tuple and calling the function directly, it gets recorded
    twice.
-
    As a result, the relationship among the statistics appears to be
    PCALL_ALL == PCALL_FUNCTION + PCALL_METHOD - PCALL_BOUND_METHOD +
                 PCALL_CFUNCTION + PCALL_TYPE + PCALL_GENERATOR + PCALL_OTHER
@@ -399,14 +395,11 @@ PyEval_RestoreThread(PyThreadState *tstate)
    The synchronous function is called with one void* argument.
    It should return 0 for success or -1 for failure -- failure should
    be accompanied by an exception.
-
    If registry succeeds, the registry function returns 0; if it fails
    (e.g. due to too many pending calls) it returns -1 (without setting
    an exception condition).
-
    Note that because registry may occur from within signal handlers,
    or other asynchronous events, calling malloc() is unsafe!
-
 #ifdef WITH_THREAD
    Any thread can schedule pending calls, but only the main thread
    will execute them.
@@ -538,11 +531,9 @@ Py_MakePendingCalls(void)
    with WITH_THREAD.
    Don't use this implementation when Py_AddPendingCalls() can happen
    on a different thread!
-
    There are two possible race conditions:
    (1) nested asynchronous calls to Py_AddPendingCall()
    (2) AddPendingCall() calls made while pending calls are being processed.
-
    (1) is very unlikely because typically signal delivery
    is blocked during signal handling.  So it should be impossible.
    (2) is a real possibility.
@@ -848,9 +839,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
     PyCodeObject *co;
 
     /* when tracing we set things up so that
-
            not (instr_lb <= current_bytecode_offset < instr_ub)
-
        is true when the line being executed has changed.  The
        initial values are such as to make this false the first
        time it is tested. */
@@ -885,25 +874,20 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             (may be skipped)
    intr1 -- beginning of long interruption
    intr2 -- end of long interruption
-
    Many opcodes call out to helper C functions.  In some cases, the
    time in those functions should be counted towards the time for the
    opcode, but not in all cases.  For example, a CALL_FUNCTION opcode
    calls another Python function; there's no point in charge all the
    bytecode executed by the called function to the caller.
-
    It's hard to make a useful judgement statically.  In the presence
    of operator overloading, it's impossible to tell if a call will
    execute new Python code or not.
-
    It's a case-by-case judgement.  I'll use intr1 for the following
    cases:
-
    EXEC_STMT
    IMPORT_STAR
    IMPORT_FROM
    CALL_FUNCTION (and friends)
-
  */
     uint64 inst0, inst1, loop0, loop1, intr0 = 0, intr1 = 0;
     int ticked = 0;
@@ -931,7 +915,6 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
     predict the second code when the first is run.  For example,
     GET_ITER is often followed by FOR_ITER. And FOR_ITER is often
     followed by STORE_FAST or UNPACK_SEQUENCE.
-
     Verifying the prediction costs a single high-speed test of a register
     variable against a constant.  If the pairing was good, then the
     processor's own internal branch predication has a high likelihood of
@@ -941,7 +924,6 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
     switch-case.  Combined with the processor's internal branch prediction,
     a successful PREDICT has the effect of making the two opcodes run as if
     they were a single new opcode with the bodies combined.
-
     If collecting opcode statistics, your choices are to either keep the
     predictions turned-on and interpret the results as if some opcodes
     had been combined or turn-off predictions so that the opcode frequency
@@ -1065,14 +1047,12 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
     freevars = f->f_localsplus + co->co_nlocals;
     first_instr = (unsigned char*) PyString_AS_STRING(co->co_code);
     /* An explanation is in order for the next line.
-
        f->f_lasti now refers to the index of the last instruction
        executed.  You might think this was obvious from the name, but
        this wasn't always true before 2.3!  PyFrame_New now sets
        f->f_lasti to -1 (i.e. the index *before* the first instruction)
        and YIELD_VALUE doesn't fiddle with f_lasti any more.  So this
        does work.  Promise.
-
        When the PREDICT() macros are enabled, some opcode pairs follow in
        direct succession without updating f->f_lasti.  A successful
        prediction effectively links the two codes together as if they
@@ -3009,10 +2989,8 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
                  EXIT(TOP, SECOND, THIRD)
                otherwise we must call
                  EXIT(None, None, None)
-
                In all cases, we remove EXIT from the stack, leaving
                the rest in the same order.
-
                In addition, if the stack represents an exception,
                *and* the function call returns a 'true' value, we
                "zap" this information, to prevent END_FINALLY from
@@ -3643,7 +3621,6 @@ PyEval_EvalCodeEx(PyCodeObject *co, PyObject *globals, PyObject *locals,
 
         /* Initialize each cell var, taking into account
            cell vars that are initialized from arguments.
-
            Should arrange for the compiler to put cellvars
            that are arguments at the beginning of the cellvars
            list so that we can march over it more efficiently?
@@ -3746,55 +3723,43 @@ kwd_as_string(PyObject *kwd) {
 
 
 /* Implementation notes for set_exc_info() and reset_exc_info():
-
 - Below, 'exc_ZZZ' stands for 'exc_type', 'exc_value' and
   'exc_traceback'.  These always travel together.
-
 - tstate->curexc_ZZZ is the "hot" exception that is set by
   PyErr_SetString(), cleared by PyErr_Clear(), and so on.
-
 - Once an exception is caught by an except clause, it is transferred
   from tstate->curexc_ZZZ to tstate->exc_ZZZ, from which sys.exc_info()
   can pick it up.  This is the primary task of set_exc_info().
   XXX That can't be right:  set_exc_info() doesn't look at tstate->curexc_ZZZ.
-
 - Now let me explain the complicated dance with frame->f_exc_ZZZ.
-
   Long ago, when none of this existed, there were just a few globals:
   one set corresponding to the "hot" exception, and one set
   corresponding to sys.exc_ZZZ.  (Actually, the latter weren't C
   globals; they were simply stored as sys.exc_ZZZ.  For backwards
   compatibility, they still are!)  The problem was that in code like
   this:
-
      try:
     "something that may fail"
      except "some exception":
     "do something else first"
     "print the exception from sys.exc_ZZZ."
-
   if "do something else first" invoked something that raised and caught
   an exception, sys.exc_ZZZ were overwritten.  That was a frequent
   cause of subtle bugs.  I fixed this by changing the semantics as
   follows:
-
     - Within one frame, sys.exc_ZZZ will hold the last exception caught
       *in that frame*.
-
     - But initially, and as long as no exception is caught in a given
       frame, sys.exc_ZZZ will hold the last exception caught in the
       previous frame (or the frame before that, etc.).
-
   The first bullet fixed the bug in the above example.  The second
   bullet was for backwards compatibility: it was (and is) common to
   have a function that is called when an exception is caught, and to
   have that function access the caught exception via sys.exc_ZZZ.
   (Example: traceback.print_exc()).
-
   At the same time I fixed the problem that sys.exc_ZZZ weren't
   thread-safe, by introducing sys.exc_info() which gets it from tstate;
   but that's really a separate improvement.
-
   The reset_exc_info() function in ceval.c restores the tstate->exc_ZZZ
   variables to what they were before the current frame was called.  The
   set_exc_info() function saves them on the frame so that
@@ -3804,7 +3769,6 @@ kwd_as_string(PyObject *kwd) {
   except clauses); and if the current frame ever caught an exception,
   frame->f_exc_ZZZ is the exception that was stored in tstate->exc_ZZZ
   at the start of the current frame.
-
 */
 
 static void
@@ -3921,13 +3885,10 @@ do_raise(PyObject *type, PyObject *value, PyObject *tb)
        raise <classinstance>, None
        raise <string>, <object>
        raise <string>, None
-
        An omitted second argument is the same as None.
-
        In addition, raise <tuple>, <anything> is the same as
        raising the tuple's first item (and it better have one!);
        this rule is applied recursively.
-
        Finally, an optional third argument can be supplied, which
        gives the traceback to be substituted (useful when
        re-raising an exception after examining it).  */
