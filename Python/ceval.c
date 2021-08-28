@@ -22,7 +22,7 @@
 #include <stdbool.h>
 
 /* Add by Chen.Yu */
-// 不能加 static，否则其他文件看不到
+// 不能加 static，否则其他文件访问不到
 volatile bool breakCurLoop = 0;
 
 #ifndef WITH_TSC
